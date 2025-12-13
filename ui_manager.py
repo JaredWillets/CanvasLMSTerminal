@@ -3,33 +3,47 @@ import termios
 import tty
 import threading
 import shutil
+from ansi import *
+from contextlib import contextmanager
 
+@contextmanager
+def raw_mode(file = sys.stdin):
+    fd = file.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        yield
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 class UIManager:
-    def __init__(self):
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+    def __init__(self, stop_event = threading.Event()):
 
-        try:
-            tty.setraw(fd)          # put terminal in raw mode
-            ch = sys.stdin.read(1)  # read one character immediately
-            print(f"\nYou pressed: {repr(ch)}")
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        self.stop_event = stop_event
         
         self.input_thread = threading.Thread(target = self._input)
         self.update_thread = threading.Thread(target = self._update)
+
 
     def start(self):
         self.input_thread.start()
         self.update_thread.start()
 
     def _input(self):
-        pass ## TODO
+        with raw_mode():
+            print("Ready for input")
+            while not self.stop_event.is_set():
+                ch = sys.stdin.read(1)
+
+                if ch == "\x03":
+                    self.stop_event.set()
+                    break
+                else:
+                    print(ch, end = "", flush = True)
 
     def _update(self):
-        pass ## TODO 
+        pass ## TODOs
 
-    
+
 if __name__ == "__main__":
     manager = UIManager()
-    
+    manager.start()
