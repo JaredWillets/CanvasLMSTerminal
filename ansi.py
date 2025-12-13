@@ -1,0 +1,3 @@
+ALT_TERMINAL = "\x1b[?1049h"
+MAIN_TERMINAL = "\x1b[?1049l"
+CLR_HOME     = "\x1b[2J\x1b[H"
